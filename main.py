@@ -179,6 +179,13 @@ class Direction():
 class Color:
     WHITE = 0XFFFF
     BLACK = 0X0001
+    SKY = 24326
+    BLUE = 6400
+    YELLOW = 16623
+    GREEN = 16391
+    RED = 232
+    ORANGE = 33019
+    PURPLE = 6336
 
     def calc_color(self, r, g, b):
         color = r << 11 | g << 5 | b
@@ -206,37 +213,41 @@ class Mino:
                            [0, 0, 0, 0],
                            [1, 1, 1, 1],
                            [0, 0, 0, 0]]
+            self.color = Color.SKY
         if self.type == self.O:
             self.blocks = [[1, 1],
                            [1, 1]]
+            self.color = Color.YELLOW
         if self.type == self.S:
             self.blocks = [[0, 0, 0],
                            [0, 1, 1],
                            [1, 1, 0]]
+            self.color = Color.GREEN
         if self.type == self.Z:
             self.blocks = [[0, 0, 0],
                            [1, 1, 0],
                            [0, 1, 1]]
+            self.color = Color.RED
         if self.type == self.J:
             self.blocks = [[0, 1, 0],
                            [0, 1, 0],
                            [1, 1, 0]]
+            self.color = Color.BLUE
         if self.type == self.L:
             self.blocks = [[0, 1, 0],
                            [0, 1, 0],
                            [0, 1, 1]]
+            self.color = Color.ORANGE
         if self.type == self.T:
             self.blocks = [[0, 0, 0],
                            [0, 1, 0],
                            [1, 1, 1]]
+            self.color = Color.PURPLE
 
         center = FIELD_WIDTH // 2
         self.mino_size = len(self.blocks)
         self.x = center - (self.mino_size // 2) + 1
         self.y = 0 - self.mino_size
-
-        # TODO 
-        self.color = Color.BLACK
 
     def get_block_coordinates(self, blocks=None):
         if blocks is None:
@@ -306,7 +317,7 @@ class Field:
             self.dropping_mino.move(Direction.DOWN)
         else:
             for coor in self.dropping_mino.get_block_coordinates():
-                self.blocks[coor[1]][coor[0]] = Color.BLACK
+                self.blocks[coor[1]][coor[0]] = self.dropping_mino.color
             self.dropping_mino = Mino()
 
     def renderer(self):
