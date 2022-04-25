@@ -302,12 +302,7 @@ class Field:
         self.dropping_mino = Mino()
 
     def update(self):
-        can_down = True
-        for coor in self.dropping_mino.get_moved_block_coordinates(Direction.DOWN):
-            if coor[1] >= 0 and (coor[1] >= FIELD_HEIGHT or self.blocks[coor[1]][coor[0]] != 0):
-                can_down = False
-                break
-        if can_down:
+        if self.__can_move_or_rotate(Direction.DOWN):
             self.dropping_mino.move(Direction.DOWN)
         else:
             for coor in self.dropping_mino.get_block_coordinates():
@@ -335,13 +330,26 @@ class Field:
         self.dropping_mino.renderer(self.LCD)
 
     def move(self, direction):
-        self.dropping_mino.move(direction)
+        if self.__can_move_or_rotate(direction):
+            self.dropping_mino.move(direction)
 
     def rotate(self, direction):
-        self.dropping_mino.rotate(direction)
+        if self.__can_move_or_rotate(direction):
+            self.dropping_mino.rotate(direction)
 
     def is_gameover(self):
         return False
+
+    def __can_move_or_rotate(self, direction):
+        moved_coordinates = self.dropping_mino.get_moved_block_coordinates(direction)
+        can = True
+        for coor in moved_coordinates:
+            if coor[0] < 0 or coor[0] >= FIELD_WIDTH or coor[1] >= FIELD_HEIGHT or \
+                    (coor[1] >= 0 and self.blocks[coor[1]][coor[0]] != 0):
+                can = False
+                break
+
+        return can
 
 
 class Button:
