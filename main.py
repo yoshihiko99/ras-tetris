@@ -201,36 +201,97 @@ class Mino:
     def __init__(self):
         self.type = randint(0, 6)
 
-        center = FIELD_WIDTH // 2
         if self.type == self.I:
-            self.block_coordinates = [[center, -1], [center, -2], [center, -3], [center, -4]]
+            self.blocks = [[0, 0, 0, 0],
+                           [0, 0, 0, 0],
+                           [0, 0, 0, 0],
+                           [1, 1, 1, 1]]
         if self.type == self.O:
-            self.block_coordinates = [[center, -1], [center - 1, -1], [center, -2], [center - 1, -2]]
+            self.blocks = [[1, 1],
+                           [1, 1]]
         if self.type == self.S:
-            self.block_coordinates = [[center - 1, -1], [center, -1], [center, -2], [center + 1, -2]]
+            self.blocks = [[0, 0, 0],
+                           [0, 1, 1],
+                           [1, 1, 0]]
         if self.type == self.Z:
-            self.block_coordinates = [[center - 1, -2], [center, -1], [center, -2], [center + 1, -1]]
+            self.blocks = [[0, 0, 0],
+                           [1, 1, 0],
+                           [0, 1, 1]]
         if self.type == self.J:
-            self.block_coordinates = [[center - 1, -1], [center, -1], [center, -2], [center, -3]]
+            self.blocks = [[0, 1, 0],
+                           [0, 1, 0],
+                           [1, 1, 0]]
         if self.type == self.L:
-            self.block_coordinates = [[center + 1, -1], [center, -1], [center, -2], [center, -3]]
+            self.blocks = [[0, 1, 0],
+                           [0, 1, 0],
+                           [0, 1, 1]]
         if self.type == self.T:
-            self.block_coordinates = [[center, -1], [center - 1, -2], [center, -2], [center + 1, -2]]
+            self.blocks = [[0, 0, 0],
+                           [0, 1, 0],
+                           [1, 1, 1]]
+
+        center = FIELD_WIDTH // 2
+        self.mino_size = len(self.blocks)
+        self.x = center - (self.mino_size // 2) + 1
+        self.y = 0 - self.mino_size
+
         # TODO 
         self.color = Color.BLACK
 
-    def get_downed_block_coordinates(self):
-        return [[coor[0], coor[1] + 1] for coor in self.block_coordinates]
+    def get_block_coordinates(self, blocks=None):
+        if blocks is None:
+            blocks = self.blocks
+        coor = []
+        for i in range(len(blocks)):
+            for j in range(len(blocks[0])):
+                if blocks[i][j]:
+                    coor.append([self.x + j, self.y + i])
+        return coor
 
-    def down(self):
-        for coor in self.block_coordinates:
-            coor[1] += 1
+    def get_moved_block_coordinates(self, direction):
+        if direction == Direction.DOWN:
+            return [[coor[0], coor[1] + 1] for coor in self.get_block_coordinates()]
+        elif direction == Direction.LEFT:
+            return [[coor[0] - 1, coor[1]] for coor in self.get_block_coordinates()]
+        elif direction == Direction.RIGHT:
+            return [[coor[0] + 1, coor[1]] for coor in self.get_block_coordinates()]
+
+    def get_rotated_block_coordinates(self, direction):
+        rotated_blocks = self.__get_rotated_blocks(direction)
+        return self.get_block_coordinates(rotated_blocks)
+
+    def move(self, direction):
+        if direction == Direction.DOWN:
+            self.y += 1
+        elif direction == Direction.LEFT:
+            self.x -= 1
+        elif direction == Direction.RIGHT:
+            self.x += 1
+
+    def rotate(self, direction):
+        self.blocks = self.__get_rotated_blocks(direction)
 
     def renderer(self, LCD):
-        for coor in self.block_coordinates:
+        for coor in self.get_block_coordinates():
             if coor[1] >= 0:
                 LCD.fill_rect(FIELD_X + coor[0] * BLOCK_SIZE, FIELD_Y + coor[1] * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,
                               self.color)
+
+    def __get_rotated_blocks(self, direction):
+        rotated_blocks = [[0] * self.mino_size for _ in range(self.mino_size)]
+
+        if direction == Direction.LEFT:
+            for i in range(self.mino_size):
+                for j in range(self.mino_size):
+                    if self.blocks[i][j]:
+                        rotated_blocks[self.mino_size - j - 1][i] = 1
+            return self.get_block_coordinates(rotated_blocks)
+        elif direction == Direction.RIGHT:
+            for i in range(self.mino_size):
+                for j in range(self.mino_size):
+                    if self.blocks[i][j]:
+                        rotated_blocks[j][self.mino_size - i - 1] = 1
+        return rotated_blocks
 
 
 class Field:
@@ -242,15 +303,14 @@ class Field:
 
     def update(self):
         can_down = True
-        for coor in self.dropping_mino.get_downed_block_coordinates():
+        for coor in self.dropping_mino.get_moved_block_coordinates(Direction.DOWN):
             if coor[1] >= 0 and (coor[1] >= FIELD_HEIGHT or self.blocks[coor[1]][coor[0]] != 0):
                 can_down = False
                 break
-
         if can_down:
-            self.dropping_mino.down()
+            self.dropping_mino.move(Direction.DOWN)
         else:
-            for coor in self.dropping_mino.block_coordinates:
+            for coor in self.dropping_mino.get_block_coordinates():
                 self.blocks[coor[1]][coor[0]] = Color.BLACK
             self.dropping_mino = Mino()
 
@@ -274,20 +334,11 @@ class Field:
                                        self.blocks[i][j])
         self.dropping_mino.renderer(self.LCD)
 
-    def move_left(self):
-        self.LCD.fill(0x0000)
+    def move(self, direction):
+        self.dropping_mino.move(direction)
 
-    def move_right(self):
-        return False
-
-    def move_down(self):
-        return False
-
-    def rotate_right(self):
-        return False
-
-    def rotate_left(self):
-        return False
+    def rotate(self, direction):
+        self.dropping_mino.rotate(direction)
 
     def is_gameover(self):
         return False
@@ -349,15 +400,15 @@ class Game:
             # detect button and move mino
             if f_cnt % DETECT_FRAME == 0:
                 if self.btn.is_pressed_left():
-                    self.field.move_left()
-                # if self.btn.is_pressed_right():
-                #     self.field.move_right()
-                # if self.btn.is_pressed_down():
-                #     self.field.move_down()
-                # if self.btn.is_pressed_A():
-                #     self.field.rotate_right()
-                # if self.btn.is_pressed_B():
-                #     self.field.rotate_left()
+                    self.field.move(Direction.LEFT)
+                if self.btn.is_pressed_right():
+                    self.field.move(Direction.RIGHT)
+                if self.btn.is_pressed_down():
+                    self.field.move(Direction.DOWN)
+                if self.btn.is_pressed_A():
+                    self.field.rotate(Direction.RIGHT)
+                if self.btn.is_pressed_B():
+                    self.field.rotate(Direction.LEFT)
                 if self.btn.is_pressed_X() and self.duty < DUTY_MAX:
                     self.duty += 1
                 if self.btn.is_pressed_Y() and self.duty > 0:
