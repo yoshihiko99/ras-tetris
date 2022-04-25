@@ -204,8 +204,8 @@ class Mino:
         if self.type == self.I:
             self.blocks = [[0, 0, 0, 0],
                            [0, 0, 0, 0],
-                           [0, 0, 0, 0],
-                           [1, 1, 1, 1]]
+                           [1, 1, 1, 1],
+                           [0, 0, 0, 0]]
         if self.type == self.O:
             self.blocks = [[1, 1],
                            [1, 1]]
@@ -338,7 +338,7 @@ class Field:
             self.dropping_mino.rotate(direction)
 
     def is_gameover(self):
-        return False
+        return sum(self.blocks[0]) != 0
 
     def __can_move_or_rotate(self, direction):
         moved_coordinates = self.dropping_mino.get_moved_block_coordinates(direction)
@@ -435,9 +435,22 @@ class Game:
             utime.sleep(0.01)
             f_cnt = (f_cnt + 1) % CYCLE_FRAME
 
+    def clear_field(self):
+        self.field = Field(self.LCD)
+
 
 #################################################
 # MAIN
 if __name__ == '__main__':
     game = Game()
-    game.start()
+    while True:
+        game.start()
+
+        game.LCD.text("GAME OVER", 80, 100, 0)
+        game.LCD.text("PRESS A TO RESTART", 50, 120, 0)
+        game.LCD.show()
+        while True:
+            utime.sleep(0.1)
+            if game.btn.is_pressed_A():
+                game.clear_field()
+                break
